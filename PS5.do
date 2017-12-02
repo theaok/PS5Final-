@@ -7,7 +7,11 @@
 
 /* For Problem Set 5 I began to work on my final project by organizing and simpliying my exisiting work. 
 I also began to see a clearer picture about the impact of environment (food access, poverty) on health in NJ emerge through descriptive statistics. 
+
+yes, descripive stats is great for that!
 ______________________________________________________________________
+
+great to talk about this upfront:
 
 Research questions include the following: 
 1- Does inaccces to healthy food impact behavior and mental health?
@@ -15,6 +19,8 @@ Research questions include the following:
 3- Who is most impacted by pollution (by race, gender, income)? 
 4- Do counties with higher pollution experience worse health outcomes (physical and mental)? 
 ______________________________________________________________________
+
+and great to cite data, either here or when you load it!
 
 My completed dataset includes data from the following sources: 
 1- NJ County Health Rankings Data (http://www.countyhealthrankings.org/rankings/data/nj)
@@ -39,7 +45,7 @@ Note: Regions are defined as North, Central and South as defined by the State of
 								
 								
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<*/ 
-local worDir "C:\Users\kathr\Desktop\PS5"
+local worDir "/tmp/"
 capture mkdir ps5 
 cd ps5
 
@@ -63,6 +69,14 @@ rename (AP-BZ) (perdrink zdrink aldrivedeath peraldrivedeath teenbirth teenpop t
 rename (CC-DG) (zprevhosprate diabetics zmedicareenrolled cohortsize gradrate zgradrate somecollege population persomecollege zsomecollege unemployed laborforce perunemployed childpov perchildpov zchildpov eightyincome twentyincome)
 rename (DH-EI) (incomeratio zincome singleparent households persingleparent zhouseholds associations associationrate zassociations violentcrimerate zviolentcrime violentcrime injurydeath injurydeathrate zinjurydeath violation zviolation severeproblems persevereproblems zsevereproblems)  
 
+//ok the above may work and be correct, but much better:
+preserve
+import excel  "`goohealth'", clear firstr
+d //now you bhave some names already :) and dont have to rename
+//not only easier but also less mistake prone!
+
+restore
+
 //Recode & Create Program //Separated each county into region and created a program to use throughout datasets 
 cap program drop kate1
 program define kate1
@@ -76,12 +90,17 @@ recode region (0/1=0 Non-Central) (1.1/2=1 Central), gen(region_2) //this allowe
 end
 kate1 
 drop in 22/23 
+//AGAIN this may work but better be mistake prone less and create a bullet proof rule like:
+drop if County==""
 
 //Destring 
 destring households region deaths yearslost zyearslost perfairpoorhealth zfairpoor puhdays zpuhdays muhdays zmuhdays lowbirth livebirth perlowbirth persmoke zsmoke perobese zobese foodindex zfood perinactive zinactive perwaccess zwaccess perdrink zdrink aldrivedeath peraldrivedeath teenbirth teenpop teenbirthrate uninsured peruninsured zuninsured PCP PCPrate zPCP dentist dentistrate zdentist MHproviders MHPrate medicaidenrolled prevhosprate zprevhosprate diabetics zmedicareenrolled, replace
 destring cohortsize gradrate zgradrate somecollege population persomecollege zsomecollege unemployed laborforce perunemployed childpov perchildpov zchildpov eightyincome twentyincome incomeratio zincome singleparent households persingleparent zhouseholds associations associationrate zassociations violentcrime violentcrimerate zviolentcrime injurydeath injurydeathrate zinjurydeath violation zviolation severeproblems persevereproblems zsevereproblems, replace
+//can just say 
+destring *,replace
 
 //violations for regressions- because violations would not destring because the obersvations were "yes" and "no" I created a new variable and assigned numeric values 
+ta violation,mi //first check if any missings
 generate violations_r=0
 replace violations_r=1 if violation=="Yes"
 move violations_r violation
@@ -123,7 +142,7 @@ loc gooPre "https://docs.google.com/uc?id="
 loc gooSuf "&export=download"
 loc goocensus= "`gooPre'"+"0B1opnkI-LLCiZHRMT3BWNEZjNW8"+"`gooSuf'"
 di "`goocensus'" 
-import excel "`goocensus'", clear 
+import excel "`goocensus'", clear //again as earlier cna use option firstr
 
 //Keep
 keep C D H J L N P R T V AR AJ AB AN AP CB CD EN EP GZ HB IH IF JF LD LF QB QD QF QH QN QP RD RF RL RN 
@@ -168,12 +187,15 @@ rename (D-F) (County Value)
 //Recode
 kate1 
 
-save toxic_ps5, replace 
+save toxic_ps5, replace  //btw can save these without ps5 string--i imagine that 
+//it will be very similar for ifnal project too 
 //------------------------------------------------------------------------------
  
 //PART 5: EPA Outdoor Air Quality Report
 //Loop
-loc gooPre "https://docs.google.com/uc?id="
+loc gooPre "https://docs.google.com/uc?id=" //btw make these into global macro
+//at the beginning so you donthave to repeat them over and over again
+//or make them into a program like kate1
 loc gooSuf "&export=download"
 loc gooEPA= "`gooPre'"+"0B1opnkI-LLCic1lHUUxUZHhvZGs"+"`gooSuf'"
 di "`gooEPA'" 
@@ -298,6 +320,8 @@ save kate_ps5, replace
 								   
 								   
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/ 
+//you do nj only but can do whole country! stats likes big numbers!
+
 //Egen
 egen unhealthy=rowmean(muhdays puhdays) //I combined mental and physical health to create a measurement of overall poor health or "unhealthy" based on the means pulled by this code I see that Atlantic, Hudson, Ocean and Salem have the poorest overall health (with Camden following right behind) 
 move unhealthy deaths 
@@ -311,7 +335,7 @@ move singlemomdad deaths
 bys region: egen avgStress=mean(perstressdays_n) //shows the average percentage of stressful days per county. South Jersey has the highest average (15%), Central Jersey (10%) and North (9%) 
 move avgStress deaths 
 
-save, replace 
+save, replace //dont use save replace, rather save as sth new; or move this up to right after merge and then save
 
 //Collapse 
 collapse childpov, by(region) //North Jersey has the largest population of children in poverty(20,441) followed by Central (13,627)and South Jersey (9,824)
@@ -330,7 +354,7 @@ collapse unhealthy, by(region) // North Jersey has by far the largest number of 
 clear 
 
 //Loops
-use kate_ps5 
+use kate_ps5 ,clear
 foreach v of varlist perchildpov nodiploma persevereproblems violentcrime muhdays puhdays{
  ta `v', p
 }
@@ -394,6 +418,7 @@ gr hbar avgStress, over(County, sort(avgStress))
 
 twoway (scatter foodindex yearslost), ytitle(Loss of Life (in years)) xtitle(Food Index (Access to Food)) title(Food Access and Loss of Life) //as access to food increases, life expectancy increases 
 graph save Graph "C:\Users\kathr\Documents\DataManagement\yearslost_food.gph", replace
+//just save in current directory; as opposed to having lengthy ugly path for each
 
 twoway (scatter perlowbirth foodindex), ytitle(Percentage of Low Birth Rates) xtitle(Food Index (Access to Food)) title(Food Access and Low Birth Rates) //higher percetange of low birth rates in areas with lower food access 
 graph save Graph "C:\Users\kathr\Documents\DataManagement\lowbirth_food.gph", replace 
@@ -443,6 +468,7 @@ outreg2 using reg1.xls,  bdec(2) st(coef) excel replace ct(A1)  lab
 
 reg  unhealthy foodindex PercentwithSNAP  
 outreg2 using reg1.xls,  bdec(2) st(coef) excel append ct(A2)  lab
+//follow examples from https://stats.idre.ucla.edu/stata/webbooks/reg/
 
 /*Results show that food access alone does not determine health. When taking SNAP 
 usage or poverty into account, for each increase in food access there is a decrease 
